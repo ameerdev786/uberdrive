@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Map from "./Map";
 
-function FindRideForm({ isOpen, setIsOpen }) {
+function FindRideForm({ isOpen, setIsOpen, imgMap }) {
+  // const [isOpen, setIsOpen] = useState(false);
+
   const navigate = useNavigate();
+  useEffect(() => {
+    console.log(isOpen, "isOpen");
+  }, [imgMap, isOpen]);
 
   return (
     <>
@@ -21,15 +26,20 @@ function FindRideForm({ isOpen, setIsOpen }) {
             <h1>Find your comfort here!</h1>
             <input type="text" placeholder="Enter pickup location" />
             <input type="text" placeholder="Where to?" />
-            <button
+            {/* <button
               onClick={() => {
                 navigate("/map", {
-                  state: { pickup: "Faisalabad", dropOff: "Sahiwal" },
+                  state: {
+                    pickup: "Faisalabad",
+                    dropOff: "Jaranwala",
+                    imgMap: imgMap,
+                  },
                 });
               }}
             >
               Confirm Locations
-            </button>
+            </button> */}
+            <Link to="/map?name=Faisalabad">go to map page you know</Link>
           </div>
         </div>
       </div>

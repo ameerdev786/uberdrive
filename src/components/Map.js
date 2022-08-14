@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import { useLocation } from "react-router-dom";
+import car from "../asserts/ubercar.jpg";
+
 mapboxgl.accessToken =
   "pk.eyJ1IjoiYW1lZXJzb2Z0ZGV2IiwiYSI6ImNsNDB5a3A0bjBiYnMzbG52NDVrZngxdmwifQ.CSFN5IyjbbXEPdKtp2stUA";
 function Map() {
@@ -8,12 +10,12 @@ function Map() {
   const map = useRef(null);
   const [lng, setLng] = useState(73.135);
   const [lat, setLat] = useState(31.4504);
-  let [zoom, setZoom] = useState(9);
+  let [zoom, setZoom] = useState(3);
   const location = useLocation();
-  const { pickup, dropOff } = location.state;
+  const { pickup, dropOff, imgMap } = location.state;
   const [pickupCoordinate, setPickupCoordinate] = useState();
   const [dropOffCoordinate, setDroopOffCoordinate] = useState();
-  const [imgMap, setImgMap] = useState(null);
+  // const [imgMap, setImgMap] = useState(null);
   //   const pickup = "Faisalabad";
   //   const takeOff = "Pune";
   useEffect(() => {
@@ -56,56 +58,27 @@ function Map() {
       .then((res) => res.json())
       .then((data) => setDroopOffCoordinate(data.features[0].center));
   }
+  // fetch coordinated ln lat of searched spaces
   useEffect(() => {
     getPickupLatlng();
     gettakeOffLatlng();
   }, [pickup, dropOff]);
   useEffect(() => {
+    if (imgMap) {
+      console.log(imgMap, "imgMap");
+    }
+  }, []);
+
+  useEffect(() => {
     // if (map.current) return; // initialize map only once
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/drakosi/ckvcwq3rwdw4314o3i2ho8tph",
+      style: "mapbox://styles/mapbox/streets-v11",
       center: [lng, lat],
-      zoom: zoom,
+      zoom: 3,
     });
-    map.on("load", () => {
-      // Load an image from an external URL.
-      map.loadImage(imgMap, (error, image) => {
-        if (error) throw error;
+    AddMarkerImgLine(map);
 
-        // Add the image to the map style.
-        map.addImage("ride", image);
-
-        // Add a data source containing one point feature.
-        map.addSource("point", {
-          type: "geojson",
-          data: {
-            type: "FeatureCollection",
-            features: [
-              {
-                type: "Feature",
-                geometry: {
-                  type: "Point",
-                  coordinates: [lng, lat],
-                },
-              },
-            ],
-          },
-        });
-
-        // Add a layer to use the image to represent the data.
-        map.addLayer({
-          id: "points",
-          type: "symbol",
-          source: "point", // reference the data source
-          layout: {
-            "icon-image": "ride", // reference the image
-            "icon-size": 0.2,
-            "icon-rotate": 1,
-          },
-        });
-      });
-    });
     if (pickupCoordinate) {
       AddmarkerToMap(map, pickupCoordinate);
     }
@@ -119,8 +92,76 @@ function Map() {
 
   function AddmarkerToMap(map, coordinates) {
     if (coordinates) {
-      const marker = new mapboxgl.Marker().setLngLat(coordinates).addTo(map);
+      new mapboxgl.Marker().setLngLat(coordinates).addTo(map);
     }
+  }
+  //Add line between two points and customs images on map you know
+  function AddMarkerImgLine(map) {
+    map.on("load", () => {
+      map.addLayer({
+        id: "route",
+        type: "line",
+        source: {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "LineString",
+              coordinates: [pickupCoordinate, dropOffCoordinate],
+            },
+          },
+        },
+      });
+      const geojson = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {
+              message: "Foo",
+              iconSize: [40, 40],
+            },
+            geometry: {
+              type: "Point",
+              coordinates: pickupCoordinate,
+            },
+          },
+          {
+            type: "Feature",
+            properties: {
+              message: "Bar",
+              iconSize: [40, 40],
+            },
+            geometry: {
+              type: "Point",
+              coordinates: dropOffCoordinate,
+            },
+          },
+        ],
+      };
+
+      for (const marker of geojson.features) {
+        // Create a DOM element for each marker.
+        const el = document.createElement("div");
+        const width = marker.properties.iconSize[0];
+        const height = marker.properties.iconSize[1];
+        el.className = "marker";
+        el.style.backgroundImage = `url('${imgMap}')`;
+        el.style.width = `${width}px`;
+        el.style.height = `${height}px`;
+        el.style.backgroundSize = "100%";
+
+        el.addEventListener("click", () => {
+          window.alert(marker.properties.message);
+        });
+
+        // Add markers to the map.
+        new mapboxgl.Marker(el)
+          .setLngLat(marker.geometry.coordinates)
+          .addTo(map);
+      }
+    });
   }
   return (
     <div className="container2">
