@@ -8,7 +8,6 @@ import FindRideForm from "./FindRideForm";
 
 function Rides({ setImgMap, setLat, setLng }) {
   const [isOpen, setIsOpen] = useState(false);
-
   return (
     <>
       <h1 className="heading">Find your Ride</h1>
