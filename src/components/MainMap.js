@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import mapboxgl from "mapbox-gl";
 import car from "../asserts/ubercar.jpg";
 import Rides from "./Rides";
 import FindRideForm from "./FindRideForm";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoiYW1lZXJzb2Z0ZGV2IiwiYSI6ImNsNDB5a3A0bjBiYnMzbG52NDVrZngxdmwifQ.CSFN5IyjbbXEPdKtp2stUA";
@@ -16,7 +16,10 @@ function MainMap() {
   const [isOpen, setIsOpen] = useState(false);
   const [imgMap, setImgMap] = useState(null);
   const navigate = useNavigate();
-
+  const location = useLocation();
+  useEffect(() => {
+    console.log(imgMap, "setImgMap");
+  }, [imgMap]);
   useEffect(() => {
     // if (map.current) return; // initialize map only once
     const map = new mapboxgl.Map({
@@ -28,7 +31,7 @@ function MainMap() {
 
     map.on("load", () => {
       // Load an image from an external URL.
-      map.loadImage(imgMap, (error, image) => {
+      map.loadImage(imgMap ? imgMap : null, (error, image) => {
         if (error) throw error;
         // Add the image to the map style.
         map.addImage("ride", image);
@@ -62,7 +65,7 @@ function MainMap() {
         });
       });
     });
-  }, []);
+  }, [imgMap]);
   useEffect(() => {
     console.log(zoom, "seee");
   }, [zoom]);
@@ -72,20 +75,14 @@ function MainMap() {
       <div className="container">
         <div className="map" ref={mapContainer}></div>
         <Rides setImgMap={setImgMap} setLat={setLat} setLng={setLng} />
-        <button
-          onClick={() =>
-            navigate("/map", {
-              state: {
-                imgMap: imgMap,
-                pickup: "Faisalabad",
-                dropOff: "Germany",
-              },
-            })
-          }
-        >
-          Go to Specific Location
-        </button>
-        <FindRideForm isOpen={isOpen} setIsOpen={setIsOpen} imgMap={imgMap} />
+        {/* <FindRideForm isOpen={isOpen} setIsOpen={setIsOpen} imgMap={imgMap} /> */}
+        {imgMap ? (
+          <Link className="mainLink" to={`/sidenav?imgMap=${imgMap}`}>
+            Choose Locations
+          </Link>
+        ) : (
+          ""
+        )}
       </div>
     </>
   );

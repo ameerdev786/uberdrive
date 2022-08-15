@@ -5,6 +5,7 @@ import calendar from "../asserts/calendar.jpg";
 import car2 from "../asserts/car2.jpg";
 import bugati from "../asserts/bugati.jpg";
 import FindRideForm from "./FindRideForm";
+import { Link } from "react-router-dom";
 
 function Rides({ setImgMap, setLat, setLng }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -59,7 +60,6 @@ function Rides({ setImgMap, setLat, setLng }) {
           <p>Taxi</p>
         </div>
       </div>
-      <FindRideForm isOpen={isOpen} setIsOpen={setIsOpen} />
     </>
   );
 }

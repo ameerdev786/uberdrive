@@ -67,7 +67,7 @@ function Map() {
     if (imgMap) {
       console.log(imgMap, "imgMap");
     }
-  }, []);
+  }, [imgMap]);
 
   useEffect(() => {
     // if (map.current) return; // initialize map only once
