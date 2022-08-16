@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import { useLocation } from "react-router-dom";
 import car from "../asserts/ubercar.jpg";
+import * as turf from "@turf/turf";
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoiYW1lZXJzb2Z0ZGV2IiwiYSI6ImNsNDB5a3A0bjBiYnMzbG52NDVrZngxdmwifQ.CSFN5IyjbbXEPdKtp2stUA";
@@ -76,95 +77,157 @@ function Map() {
       style: "mapbox://styles/mapbox/streets-v11",
       center: [lng, lat],
       zoom: 3,
+      // pitch: 40,
+      // projection: "globe",
     });
-    AddMarkerImgLine(map);
+    map.loadImage(imgMap ? imgMap : null, (error, image) => {
+      map.addImage("ride", image);
 
-    if (pickupCoordinate) {
-      AddmarkerToMap(map, pickupCoordinate);
-    }
-    if (dropOffCoordinate) {
-      AddmarkerToMap(map, dropOffCoordinate);
-    }
-    if (dropOffCoordinate && pickupCoordinate) {
-      map.fitBounds([pickupCoordinate, dropOffCoordinate]);
-    }
-  }, [pickupCoordinate, dropOffCoordinate]);
-
-  function AddmarkerToMap(map, coordinates) {
-    if (coordinates) {
-      new mapboxgl.Marker().setLngLat(coordinates).addTo(map);
-    }
-  }
-  //Add line between two points and customs images on map you know
-  function AddMarkerImgLine(map) {
-    map.on("load", () => {
-      map.addLayer({
-        id: "route",
-        type: "line",
-        source: {
-          type: "geojson",
-          data: {
-            type: "Feature",
-            properties: {},
-            geometry: {
-              type: "LineString",
-              coordinates: [pickupCoordinate, dropOffCoordinate],
-            },
-          },
-        },
+      map.on("style.load", () => {
+        map.setFog({ "horizon-blend": 0.05 }); // Enable stars with reduced atmosphere
       });
-      const geojson = {
-        type: "FeatureCollection",
-        features: [
-          {
-            type: "Feature",
-            properties: {
-              message: "Foo",
-              iconSize: [40, 40],
+      if (pickupCoordinate && dropOffCoordinate && imgMap) {
+        // A simple line from source to destination.
+        const route = {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              geometry: {
+                type: "LineString",
+                coordinates: [pickupCoordinate, dropOffCoordinate],
+              },
             },
-            geometry: {
-              type: "Point",
-              coordinates: pickupCoordinate,
+          ],
+        };
+        // A single point that animates along the route.
+        // Coordinates are initially set to origin.
+        const point = {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              properties: {},
+              geometry: {
+                type: "Point",
+                coordinates: pickupCoordinate,
+              },
             },
-          },
-          {
-            type: "Feature",
-            properties: {
-              message: "Bar",
-              iconSize: [40, 40],
-            },
-            geometry: {
-              type: "Point",
-              coordinates: dropOffCoordinate,
-            },
-          },
-        ],
-      };
+          ],
+        };
+        // Calculate the distance in kilometers between route start/end point.
+        const lineDistance = turf.length(route.features[0]);
 
-      for (const marker of geojson.features) {
-        // Create a DOM element for each marker.
-        const el = document.createElement("div");
-        const width = marker.properties.iconSize[0];
-        const height = marker.properties.iconSize[1];
-        el.className = "marker";
-        el.style.backgroundImage = `url('${imgMap}')`;
-        el.style.width = `${width}px`;
-        el.style.height = `${height}px`;
-        el.style.backgroundSize = "100%";
+        const arc = [];
 
-        el.addEventListener("click", () => {
-          window.alert(marker.properties.message);
+        // Number of steps to use in the arc and animation, more steps means
+        // a smoother arc and animation, but too many steps will result in a
+        // low frame rate
+        const steps = 380;
+
+        // Draw an arc between the `origin` & `destination` of the two points
+        for (let i = 0; i < lineDistance; i += lineDistance / steps) {
+          const segment = turf.along(route.features[0], i);
+          arc.push(segment.geometry.coordinates);
+        }
+
+        // Update the route with calculated arc coordinates
+        route.features[0].geometry.coordinates = arc;
+
+        // Used to increment the value of the point measurement against the route.
+        let counter = 0;
+
+        map.on("load", () => {
+          // Add a source and layer displaying a point which will be animated in a circle.
+          map.addSource("route", {
+            type: "geojson",
+            data: route,
+          });
+
+          map.addSource("point", {
+            type: "geojson",
+            data: point,
+          });
+
+          map.addLayer({
+            id: "route",
+            source: "route",
+            type: "line",
+            paint: {
+              "line-width": 2,
+              "line-color": "#007cbf",
+            },
+          });
+
+          map.addLayer({
+            id: "point",
+            source: "point",
+            type: "symbol",
+            layout: {
+              // This icon is a part of the Mapbox Streets style.
+              // To view all images available in a Mapbox style, open
+              // the style in Mapbox Studio and click the "Images" tab.
+              // To add a new image to the style at runtime see
+              // https://docs.mapbox.com/mapbox-gl-js/example/add-image/
+              "icon-image": "ride",
+              "icon-size": 0.1,
+              "icon-rotate": ["get", "bearing"],
+              "icon-rotation-alignment": "map",
+              "icon-allow-overlap": true,
+              "icon-ignore-placement": true,
+              "icon-rotate": 1,
+            },
+          });
+
+          function animate() {
+            const start =
+              route.features[0].geometry.coordinates[
+                counter >= steps ? counter - 1 : counter
+              ];
+            const end =
+              route.features[0].geometry.coordinates[
+                counter >= steps ? counter : counter + 1
+              ];
+            if (!start || !end) return;
+
+            // Update point geometry to a new position based on counter denoting
+            // the index to access the arc
+            point.features[0].geometry.coordinates =
+              route.features[0].geometry.coordinates[counter];
+
+            // Calculate the bearing to ensure the icon is rotated to match the route arc
+            // The bearing is calculated between the current point and the next point, except
+            // at the end of the arc, which uses the previous point and the current point
+            point.features[0].properties.bearing = turf.bearing(
+              turf.point(start),
+              turf.point(end)
+            );
+
+            // Update the source with this new data
+            map.getSource("point").setData(point);
+
+            // Request the next frame of animation as long as the end has not been reached
+            if (counter < steps) {
+              requestAnimationFrame(animate);
+            }
+
+            counter = counter + 1;
+          }
+
+          // Start the animation
+          animate(counter);
         });
-
-        // Add markers to the map.
-        new mapboxgl.Marker(el)
-          .setLngLat(marker.geometry.coordinates)
-          .addTo(map);
       }
     });
-  }
+  }, [pickupCoordinate, dropOffCoordinate]);
+
   return (
     <div className="container2">
+      <div className="guide">
+        <h1>
+          Your Way from <span>{pickup}</span> to <span>{dropOff}</span>
+        </h1>
+      </div>
       <div className="map" ref={mapContainer}></div>
     </div>
   );

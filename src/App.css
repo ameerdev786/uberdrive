@@ -10,10 +10,28 @@
 }
 .container2 {
   width: 100%;
-  height: 60vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   padding: 0px 0px 20px 0px;
+  background-color: rgb(255, 244, 231);
+}
+.container2 .map {
+  width: 100%;
+}
+.container2 .guide {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.guide h1 {
+  color: rgb(14, 98, 131);
+  font-weight: 500;
+}
+.guide span {
+  color: blue;
+  font-weight: bold;
 }
 .rmap {
   width: 100%;
@@ -88,7 +106,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: aliceblue;
+  /* background-image: url("./asserts/yes.jpg"); */
+  background-image: radial-gradient(rgb(255, 255, 255), rgb(150, 137, 137));
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
 }
 .sideform {
   width: 350px;
@@ -213,5 +235,4 @@
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  margin-bottom: 100px;
 }
