@@ -9,17 +9,11 @@ mapboxgl.accessToken =
   "pk.eyJ1IjoiYW1lZXJzb2Z0ZGV2IiwiYSI6ImNsNDB5a3A0bjBiYnMzbG52NDVrZngxdmwifQ.CSFN5IyjbbXEPdKtp2stUA";
 function MainMap() {
   const mapContainer = useRef(null);
-  const map = useRef(null);
   const [lng, setLng] = useState(73.135);
   const [lat, setLat] = useState(31.4504);
   let [zoom, setZoom] = useState(9);
-  const [isOpen, setIsOpen] = useState(false);
   const [imgMap, setImgMap] = useState(null);
-  const navigate = useNavigate();
-  const location = useLocation();
-  useEffect(() => {
-    console.log(imgMap, "setImgMap");
-  }, [imgMap]);
+
   useEffect(() => {
     // if (map.current) return; // initialize map only once
     const map = new mapboxgl.Map({
@@ -65,7 +59,7 @@ function MainMap() {
         });
       });
     });
-  }, [imgMap]);
+  }, [imgMap, zoom]);
   useEffect(() => {
     console.log(zoom, "seee");
   }, [zoom]);
@@ -73,6 +67,32 @@ function MainMap() {
   return (
     <>
       <div className="container">
+        <div className="zoomDiv">
+          <button
+            onClick={() => {
+              setZoom(zoom + 1);
+            }}
+            className="zoomin"
+          >
+            Zoom+
+          </button>
+          <button
+            onClick={() => {
+              setZoom(zoom - 1);
+            }}
+            className="zoomout"
+          >
+            Zoom-
+          </button>
+          <input
+            type={"range"}
+            min="1"
+            max="7"
+            onChange={(e) => {
+              setZoom(Number(e.target.value));
+            }}
+          />
+        </div>
         <div className="map" ref={mapContainer}></div>
         <Rides setImgMap={setImgMap} setLat={setLat} setLng={setLng} />
         {/* <FindRideForm isOpen={isOpen} setIsOpen={setIsOpen} imgMap={imgMap} /> */}

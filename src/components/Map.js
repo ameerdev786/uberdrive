@@ -16,17 +16,14 @@ function Map() {
   const { pickup, dropOff, imgMap } = location.state;
   const [pickupCoordinate, setPickupCoordinate] = useState();
   const [dropOffCoordinate, setDroopOffCoordinate] = useState();
+  const [totalDistance, setTotalDistance] = useState(0);
+  const [travelTime, setTravelingTime] = useState(0);
+  const [limitForZoom] = useState(700);
+  const [isGreater] = useState(false);
   // const [imgMap, setImgMap] = useState(null);
   //   const pickup = "Faisalabad";
   //   const takeOff = "Pune";
-  useEffect(() => {
-    console.log(pickup);
-    console.log(dropOff);
 
-    if (dropOffCoordinate && pickupCoordinate) {
-      console.log(pickupCoordinate, dropOffCoordinate, "look");
-    }
-  }, [pickupCoordinate, dropOffCoordinate]);
   const token =
     "pk.eyJ1IjoiYW1lZXJzb2Z0ZGV2IiwiYSI6ImNsNDB5a3A0bjBiYnMzbG52NDVrZngxdmwifQ.CSFN5IyjbbXEPdKtp2stUA";
   const [pickupUrl] = useState(
@@ -75,9 +72,9 @@ function Map() {
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v11",
-      center: [lng, lat],
-      zoom: 3,
-      // pitch: 40,
+      center: pickupCoordinate,
+      zoom: totalDistance > 700 ? 3 : 6,
+      // pitch: 10,
       // projection: "globe",
     });
     map.loadImage(imgMap ? imgMap : null, (error, image) => {
@@ -117,13 +114,14 @@ function Map() {
         };
         // Calculate the distance in kilometers between route start/end point.
         const lineDistance = turf.length(route.features[0]);
-
+        setTotalDistance(parseInt(turf.length(route, { units: "kilometers" })));
         const arc = [];
+        CalculateTime(parseInt(turf.length(route, { units: "kilometers" })));
 
         // Number of steps to use in the arc and animation, more steps means
         // a smoother arc and animation, but too many steps will result in a
         // low frame rate
-        const steps = 380;
+        const steps = 200;
 
         // Draw an arc between the `origin` & `destination` of the two points
         for (let i = 0; i < lineDistance; i += lineDistance / steps) {
@@ -219,14 +217,28 @@ function Map() {
         });
       }
     });
-  }, [pickupCoordinate, dropOffCoordinate]);
+  }, [pickupCoordinate, dropOffCoordinate, totalDistance]);
+  const CalculateTime = (totalDistance) => {
+    if (totalDistance) {
+      return setTravelingTime(parseFloat(totalDistance / 50));
+    }
+  };
 
   return (
     <div className="container2">
       <div className="guide">
-        <h1>
+        <h3>
           Your Way from <span>{pickup}</span> to <span>{dropOff}</span>
-        </h1>
+        </h3>
+
+        <h3>
+          Total Distance is <span>{totalDistance}</span> Km
+        </h3>
+
+        <h3>
+          Total time in hour is <span>{travelTime && travelTime} hour</span> Km
+          of car speed 50km/hour
+        </h3>
       </div>
       <div className="map" ref={mapContainer}></div>
     </div>
